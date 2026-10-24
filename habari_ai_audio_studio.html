@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habari - AI Audio & Studio Synthesizer</title>
+
+    <!-- Open Graph Visual Preview Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Habari | AI Audio & Studio Synthesizer">
+    <meta property="og:description" content="Generate high-quality narration with tailored ambient soundscapes and long-form script synthesis up to 2 hours.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1200&q=80">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Habari | AI Audio & Studio Synthesizer">
+    <meta name="twitter:description" content="Studio-grade audio narration with natural human speech playback.">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1200&q=80">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 3px; }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        
+        html:not(.dark) body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        html:not(.dark) .glass-panel {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-color: rgba(226, 232, 240, 0.8);
+        }
+
+        .preset-card.active-preset {
+            border-color: rgba(168, 85, 247, 0.8);
+            background-color: rgba(30, 27, 75, 0.6);
+            box-shadow: 0 0 20px -3px rgba(168, 85, 247, 0.25);
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 35px -5px rgba(168, 85, 247, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen transition-colors duration-300 flex flex-col antialiased relative overflow-x-hidden">
+
+    <!-- Background Ambient Glows -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/15 dark:bg-purple-600/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/15 dark:bg-indigo-600/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
+
+    <!-- Center-Aligned Header / Navigation Bar -->
+    <header class="sticky top-0 z-40 w-full border-b border-slate-800 dark:border-slate-800 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between relative">
+            
+            <!-- Left Placeholder for symmetry -->
+            <div class="w-10"></div>
+
+            <!-- Centered Header Title & Subtitle -->
+            <div class="text-center flex flex-col items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20">
+                        <i class="fa-solid fa-microphone-lines text-sm"></i>
+                    </div>
+                    <h1 class="font-black text-2xl tracking-tight bg-gradient-to-r from-purple-400 via-indigo-300 to-pink-300 bg-clip-text text-transparent">
+                        Habari
+                    </h1>
+                </div>
+                <p class="text-xs text-slate-400 dark:text-slate-400 font-medium tracking-wide mt-0.5">
+                    AI Audio & Studio Synthesizer
+                </p>
+            </div>
+
+            <!-- Dark / Light Theme Toggle -->
+            <button id="themeToggleBtn" class="w-10 h-10 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 hover:bg-slate-800 text-slate-300 transition border border-slate-700 flex items-center justify-center shadow" title="Toggle Light/Dark Theme">
+                <i id="themeIcon" class="fa-solid fa-moon text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Studio Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Controls & Connected Presets (4 cols) -->
+        <aside class="lg:col-span-4 space-y-6">
+
+            <!-- Content Presets (Podcast, Cinematic, Meditation) -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3 glow-effect">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-semibold text-white dark:text-slate-100 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-purple-400"></i> Studio Mode Selection
+                    </h2>
+                    <span id="activeModeBadge" class="text-[10px] bg-purple-950/80 text-purple-300 border border-purple-800/80 px-2.5 py-0.5 rounded-full font-bold uppercase transition-all">
+                        Active Mode: Custom Script
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400">Select a mode to instantly sync script templates, ambient soundscapes, and matching voice profiles.</p>
+
+                <div class="space-y-2.5 pt-1">
+                    <!-- Podcast Card -->
+                    <button id="presetPodcastCard" class="preset-card w-full text-left p-3.5 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 rounded-xl transition group flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 group-hover:scale-105 transition shrink-0">
+                                <i class="fa-solid fa-podcast"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-xs text-slate-100 group-hover:text-purple-300 transition">Podcast Studio</div>
+                                <div class="text-[11px] text-slate-400">Warm narrative + Lo-Fi Chill</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-600 group-hover:text-purple-400 transition"></i>
+                    </button>
+
+                    <!-- Cinematic Card -->
+                    <button id="presetCinematicCard" class="preset-card w-full text-left p-3.5 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 rounded-xl transition group flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-lg bg-indigo-950 border border-indigo-800 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition shrink-0">
+                                <i class="fa-solid fa-film"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-xs text-slate-100 group-hover:text-indigo-300 transition">Cinematic Trailer</div>
+                                <div class="text-[11px] text-slate-400">Dramatic narration + Strings</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-600 group-hover:text-indigo-400 transition"></i>
+                    </button>
+
+                    <!-- Guided Meditation Card -->
+                    <button id="presetGuidedCard" class="preset-card w-full text-left p-3.5 bg-slate-900/90 dark:bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 rounded-xl transition group flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-lg bg-pink-950 border border-pink-800 flex items-center justify-center text-pink-400 group-hover:scale-105 transition shrink-0">
+                                <i class="fa-solid fa-spa"></i>
+                            </span>
+                            <div>
+                                <div class="font-bold text-xs text-slate-100 group-hover:text-pink-300 transition">Guided Meditation</div>
+                                <div class="text-[11px] text-slate-400">Soothing voice + Zen Pad</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-600 group-hover:text-pink-400 transition"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Voice Selection Card -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-semibold text-white dark:text-slate-100 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-headset text-purple-400"></i> Voice Selection
+                    </h2>
+                    <span id="voiceStyleBadge" class="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-bold">
+                        Natural Speech
+                    </span>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="voiceSelect" class="block text-xs font-medium text-slate-300">Available Voices (Auto-selects Clear Voices)</label>
+                    <select id="voiceSelect" class="w-full bg-slate-900 dark:bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">Detecting available speech voices...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Background Music Controls Card -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-semibold text-white dark:text-slate-100 flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-music text-indigo-400"></i> Ambient Soundscape Mixer
+                    </h2>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="bgMusicToggle" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div>
+                    <label for="musicStyleSelect" class="block text-xs font-medium mb-1 text-slate-300">Soundscape Ambience</label>
+                    <select id="musicStyleSelect" class="w-full bg-slate-900 dark:bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="lofi">Lo-Fi Chill & Warm Keys</option>
+                        <option value="synthwave">80s Synthwave Retro Night</option>
+                        <option value="ambient">Calm Zen Meditation Pad</option>
+                        <option value="orchestral">Cinematic Dramatic Strings</option>
+                    </select>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-medium mb-1">
+                        <span class="text-slate-400">Music Volume</span>
+                        <span id="musicVolDisplay" class="text-indigo-400 font-semibold">18%</span>
+                    </div>
+                    <input id="musicVolRange" type="range" min="0" max="100" value="18" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+            </div>
+
+            <!-- Target Script Duration Selector (Up to 2 Hours) -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
+                <div class="flex justify-between text-xs font-medium mb-1">
+                    <span class="text-slate-400">Script Target Time Cap</span>
+                    <span id="targetDurationDisplay" class="text-purple-400 font-semibold">30m 00s</span>
+                </div>
+                <input id="durationRange" type="range" min="60" max="7200" step="60" value="1800" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                <div class="flex justify-between text-[10px] text-slate-500 font-medium">
+                    <span>1m</span>
+                    <span>60m (1 Hr)</span>
+                    <span>120m (2 Hrs)</span>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Column: Workspace, Visualizer & Playback (8 cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- Real-Time Stats Banner -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-purple-950/50 border border-purple-800 flex items-center justify-center text-purple-400">
+                        <i class="fa-solid fa-clock text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Estimated Playback Time</div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="estimatedTimeDisplay" class="text-xl font-extrabold text-white">00m 00s</span>
+                            <span class="text-xs text-slate-500 font-medium">/ 2h max</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6 border-l border-slate-800 pl-6">
+                    <div>
+                        <div class="text-[11px] text-slate-400 font-medium">Total Words</div>
+                        <div id="wordCountDisplay" class="text-sm font-bold text-slate-200">0 words</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-400 font-medium">Selected Voice</div>
+                        <div id="selectedVoiceBadge" class="text-xs font-bold text-purple-400">System Voice</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Limit Exceeded Warning -->
+            <div id="limitWarning" class="hidden p-4 rounded-xl border border-red-800 bg-red-950/40 text-red-300 flex items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-lg text-red-400 shrink-0"></i>
+                <div class="text-xs font-medium">
+                    <strong class="font-bold">Script length limit:</strong> Script length exceeds selected duration limit (~18,000 words max for 2 hours).
+                </div>
+            </div>
+
+            <!-- Script Editor -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex-1 flex flex-col min-h-[320px]">
+                
+                <!-- Toolbar -->
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Narration Script Workspace</span>
+
+                    <div class="flex items-center gap-3">
+                        <button id="copyScriptBtn" class="text-xs text-slate-400 hover:text-purple-300 transition flex items-center gap-1.5" title="Copy text to clipboard">
+                            <i class="fa-solid fa-copy"></i> Copy
+                        </button>
+                        <button id="clearScriptBtn" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center gap-1.5" title="Clear editor content">
+                            <i class="fa-solid fa-trash-can"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Textarea -->
+                <div class="relative flex-1 flex flex-col">
+                    <textarea id="scriptTextarea" placeholder="Write or paste your narration script here, or select a Studio Mode on the left to automatically load dynamic scripts and matching soundscapes..." class="w-full flex-1 min-h-[220px] p-4 bg-slate-900/90 dark:bg-slate-900/90 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm leading-relaxed transition font-sans"></textarea>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="progressContainer" class="mt-4 hidden">
+                    <div class="flex justify-between text-xs font-medium mb-1 text-purple-400">
+                        <span id="progressStatusText">Synthesizing speech output...</span>
+                        <span id="progressPercentText">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="progressBar" class="bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500 h-full w-0 transition-all duration-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Studio Visualizer & Playback Controls -->
+            <div class="glass-panel border border-slate-800 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+
+                <!-- Spectrum Visualizer Canvas -->
+                <div class="bg-slate-900 rounded-xl p-3 h-24 flex items-center justify-center relative overflow-hidden border border-slate-800">
+                    <canvas id="waveformCanvas" class="w-full h-full"></canvas>
+                    <div id="visualizerPlaceholder" class="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-medium">
+                        <i class="fa-solid fa-wave-square mr-2 text-purple-500"></i> Interactive Spectrum Canvas
+                    </div>
+                </div>
+
+                <!-- Controls Row -->
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <button id="playBtn" class="px-6 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/25 flex items-center gap-2 transition transform active:scale-95 text-sm">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Synthesize & Play</span>
+                        </button>
+
+                        <button id="pauseBtn" disabled class="p-3 bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed" title="Pause Speech">
+                            <i class="fa-solid fa-pause"></i>
+                        </button>
+
+                        <button id="stopBtn" disabled class="p-3 bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed" title="Stop Speech">
+                            <i class="fa-solid fa-square"></i>
+                        </button>
+                    </div>
+
+                    <!-- Export Audio Track -->
+                    <button id="downloadAudioBtn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition flex items-center gap-2 shadow">
+                        <i class="fa-solid fa-file-audio"></i>
+                        <span>Export Track (.wav)</span>
+                    </button>
+                </div>
+
+                <!-- Status Message Banner -->
+                <div id="statusMessage" class="text-xs text-center font-medium text-slate-400">
+                    Ready. Select a mode or write a script to synthesize.
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Toast Popup Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50 text-sm border border-slate-800 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Studio mode updated!</span>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        const MAX_SECONDS = 7200; // 2 Hours
+        const WORDS_PER_MINUTE = 150; // Standard 1.0x human speech rate
+
+        // Preset Configurations Dictionary
+        const STUDIO_PRESETS = {
+            podcast: {
+                id: 'podcast',
+                title: 'Podcast Studio',
+                badgeText: 'Active Mode: Podcast Studio',
+                script: `Welcome back to Habari Studio. In today's episode, we explore how intelligent voice synthesis and procedural soundscapes are transforming modern digital broadcasting. From warm narrative cadences to immersive ambient textures, audio publishing is reaching new levels of accessibility. Let's dive right into today's topic.`,
+                musicStyle: 'lofi',
+                musicVol: '18',
+                voiceKeywords: ['samantha', 'victoria', 'google us english', 'natural', 'karen', 'en-us']
+            },
+            cinematic: {
+                id: 'cinematic',
+                title: 'Cinematic Trailer',
+                badgeText: 'Active Mode: Cinematic Trailer',
+                script: `In a world bounded by darkness, a single voice emerges to reveal the truth. Welcome to Habari. Engineered for profound depth, raw narrative emotion, and unforgettable resonance. Prepare yourself for an extraordinary audio journey.`,
+                musicStyle: 'orchestral',
+                musicVol: '25',
+                voiceKeywords: ['daniel', 'george', 'alex', 'google uk english', 'male', 'en-gb']
+            },
+            guided: {
+                id: 'guided',
+                title: 'Guided Meditation',
+                badgeText: 'Active Mode: Guided Meditation',
+                script: `Take a deep, gentle breath in through your nose... and slowly release it out. Feel all tension in your body fading away. With every breath, allow your mind to become completely calm, peaceful, and present in this moment. Welcome to Habari.`,
+                musicStyle: 'ambient',
+                musicVol: '12',
+                voiceKeywords: ['victoria', 'zira', 'karen', 'female', 'en-us', 'en-au']
+            }
+        };
+
+        // DOM Handles
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        const scriptTextarea = document.getElementById('scriptTextarea');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const voiceStyleBadge = document.getElementById('voiceStyleBadge');
+        const activeModeBadge = document.getElementById('activeModeBadge');
+
+        const bgMusicToggle = document.getElementById('bgMusicToggle');
+        const musicStyleSelect = document.getElementById('musicStyleSelect');
+        const musicVolRange = document.getElementById('musicVolRange');
+        const musicVolDisplay = document.getElementById('musicVolDisplay');
+
+        const durationRange = document.getElementById('durationRange');
+        const targetDurationDisplay = document.getElementById('targetDurationDisplay');
+
+        const estimatedTimeDisplay = document.getElementById('estimatedTimeDisplay');
+        const wordCountDisplay = document.getElementById('wordCountDisplay');
+        const selectedVoiceBadge = document.getElementById('selectedVoiceBadge');
+        const limitWarning = document.getElementById('limitWarning');
+
+        const presetPodcastCard = document.getElementById('presetPodcastCard');
+        const presetCinematicCard = document.getElementById('presetCinematicCard');
+        const presetGuidedCard = document.getElementById('presetGuidedCard');
+
+        const copyScriptBtn = document.getElementById('copyScriptBtn');
+        const clearScriptBtn = document.getElementById('clearScriptBtn');
+
+        const progressContainer = document.getElementById('progressContainer');
+        const progressStatusText = document.getElementById('progressStatusText');
+        const progressPercentText = document.getElementById('progressPercentText');
+        const progressBar = document.getElementById('progressBar');
+
+        const waveformCanvas = document.getElementById('waveformCanvas');
+        const visualizerPlaceholder = document.getElementById('visualizerPlaceholder');
+        const canvasCtx = waveformCanvas.getContext('2d');
+
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadAudioBtn = document.getElementById('downloadAudioBtn');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Internal State
+        let availableVoices = [];
+        let audioCtx = null;
+        let musicGainNode = null;
+        let musicOscillators = [];
+        let isPlaying = false;
+        let isPaused = false;
+        let animFrameId = null;
+        let currentActivePresetId = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setupCanvas();
+            initVoices();
+            loadDraft();
+            updateStats();
+        });
+
+        // Theme Switch
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            themeIcon.className = isDark ? 'fa-solid fa-moon text-sm' : 'fa-solid fa-sun text-sm text-amber-400';
+        });
+
+        // Initialize Web Speech Voices
+        function initVoices() {
+            if (!('speechSynthesis' in window)) {
+                voiceSelect.innerHTML = '<option value="">Speech synthesis not supported in this browser</option>';
+                return;
+            }
+
+            function populateVoiceList() {
+                availableVoices = window.speechSynthesis.getVoices();
+                if (availableVoices.length === 0) return;
+
+                voiceSelect.innerHTML = '';
+
+                // Auto prioritize clear female voices
+                let preferredIndex = 0;
+                const femaleKeywords = ['female', 'samantha', 'victoria', 'google uk english female', 'zira', 'karen', 'natural'];
+
+                availableVoices.forEach((voice, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.textContent = `${voice.name} (${voice.lang})${voice.default ? ' — Default' : ''}`;
+                    voiceSelect.appendChild(opt);
+
+                    const name = voice.name.toLowerCase();
+                    if (femaleKeywords.some(kw => name.includes(kw)) && preferredIndex === 0) {
+                        preferredIndex = index;
+                    }
+                });
+
+                voiceSelect.value = preferredIndex;
+                if (availableVoices[preferredIndex]) {
+                    selectedVoiceBadge.textContent = availableVoices[preferredIndex].name;
+                }
+            }
+
+            populateVoiceList();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+        }
+
+        voiceSelect.addEventListener('change', (e) => {
+            const idx = e.target.value;
+            if (availableVoices[idx]) {
+                selectedVoiceBadge.textContent = availableVoices[idx].name;
+            }
+        });
+
+        function selectMatchingVoice(keywords) {
+            if (availableVoices.length === 0) return;
+            const foundIdx = availableVoices.findIndex(v => {
+                const name = v.name.toLowerCase();
+                return keywords.some(kw => name.includes(kw));
+            });
+
+            if (foundIdx !== -1) {
+                voiceSelect.value = foundIdx;
+                selectedVoiceBadge.textContent = availableVoices[foundIdx].name;
+            }
+        }
+
+        // Activate Mode & Bi-Directional Linking
+        function applyStudioPreset(presetKey) {
+            const preset = STUDIO_PRESETS[presetKey];
+            if (!preset) return;
+
+            currentActivePresetId = preset.id;
+
+            // Highlight corresponding card
+            [presetPodcastCard, presetCinematicCard, presetGuidedCard].forEach(card => card.classList.remove('active-preset'));
+            
+            if (presetKey === 'podcast') presetPodcastCard.classList.add('active-preset');
+            if (presetKey === 'cinematic') presetCinematicCard.classList.add('active-preset');
+            if (presetKey === 'guided') presetGuidedCard.classList.add('active-preset');
+
+            // Apply Mode Settings
+            scriptTextarea.value = preset.script;
+            musicStyleSelect.value = preset.musicStyle;
+            musicVolRange.value = preset.musicVol;
+            musicVolDisplay.textContent = `${preset.musicVol}%`;
+            bgMusicToggle.checked = true;
+
+            activeModeBadge.textContent = preset.badgeText;
+            voiceStyleBadge.textContent = `${preset.title} Voice`;
+
+            selectMatchingVoice(preset.voiceKeywords);
+
+            saveDraft();
+            updateStats();
+            showToast(`${preset.title} mode activated!`);
+
+            if (isPlaying) {
+                stopAudio();
+                playBtn.click();
+            }
+        }
+
+        presetPodcastCard.addEventListener('click', () => applyStudioPreset('podcast'));
+        presetCinematicCard.addEventListener('click', () => applyStudioPreset('cinematic'));
+        presetGuidedCard.addEventListener('click', () => applyStudioPreset('guided'));
+
+        // Direct Text Modifications clear Preset Active highlight
+        scriptTextarea.addEventListener('input', () => {
+            if (currentActivePresetId) {
+                currentActivePresetId = null;
+                [presetPodcastCard, presetCinematicCard, presetGuidedCard].forEach(card => card.classList.remove('active-preset'));
+                activeModeBadge.textContent = 'Active Mode: Custom Script';
+            }
+            saveDraft();
+            updateStats();
+        });
+
+        // Bi-Directional Soundscape Sync
+        musicStyleSelect.addEventListener('change', (e) => {
+            const style = e.target.value;
+            if (style === 'lofi') applyStudioPreset('podcast');
+            else if (style === 'orchestral') applyStudioPreset('cinematic');
+            else if (style === 'ambient') applyStudioPreset('guided');
+        });
+
+        copyScriptBtn.addEventListener('click', () => {
+            const text = scriptTextarea.value;
+            if (!text) {
+                showToast("Script workspace is empty!", "fa-circle-exclamation", "text-amber-400");
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("Script copied to clipboard!");
+                }).catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
+        });
+
+        function fallbackCopy(text) {
+            scriptTextarea.select();
+            document.execCommand('copy');
+            showToast("Script copied to clipboard!");
+        }
+
+        clearScriptBtn.addEventListener('click', () => {
+            scriptTextarea.value = '';
+            currentActivePresetId = null;
+            [presetPodcastCard, presetCinematicCard, presetGuidedCard].forEach(card => card.classList.remove('active-preset'));
+            activeModeBadge.textContent = 'Active Mode: Custom Script';
+            saveDraft();
+            updateStats();
+            stopAudio();
+            showToast("Script cleared");
+        });
+
+        function saveDraft() {
+            try { localStorage.setItem('habari_studio_draft_v3', scriptTextarea.value); } catch(e){}
+        }
+
+        function loadDraft() {
+            try {
+                const saved = localStorage.getItem('habari_studio_draft_v3');
+                if (saved) scriptTextarea.value = saved;
+            } catch(e){}
+        }
+
+        musicVolRange.addEventListener('input', (e) => {
+            musicVolDisplay.textContent = `${e.target.value}%`;
+            if (musicGainNode && audioCtx) {
+                musicGainNode.gain.setValueAtTime((e.target.value / 100) * 0.15, audioCtx.currentTime);
+            }
+        });
+
+        durationRange.addEventListener('input', (e) => {
+            const secs = parseInt(e.target.value, 10);
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            targetDurationDisplay.textContent = `${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+            updateStats();
+        });
+
+        function updateStats() {
+            const text = scriptTextarea.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const estimatedSecs = Math.ceil((words / WORDS_PER_MINUTE) * 60);
+
+            wordCountDisplay.textContent = `${words} words`;
+
+            const hours = Math.floor(estimatedSecs / 3600);
+            const m = Math.floor((estimatedSecs % 3600) / 60);
+            const s = estimatedSecs % 60;
+
+            if (hours > 0) {
+                estimatedTimeDisplay.textContent = `${String(hours).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+            } else {
+                estimatedTimeDisplay.textContent = `${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+            }
+
+            const targetMaxSecs = parseInt(durationRange.value, 10);
+
+            if (estimatedSecs > targetMaxSecs || estimatedSecs > MAX_SECONDS) {
+                limitWarning.classList.remove('hidden');
+            } else {
+                limitWarning.classList.add('hidden');
+            }
+        }
+
+        function ensureAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        // Web Audio Procedural Background Soundscape Synthesis
+        function startBackgroundMusic() {
+            if (!bgMusicToggle.checked) return;
+
+            const ctx = ensureAudioContext();
+            stopBackgroundMusic();
+
+            musicGainNode = ctx.createGain();
+            musicGainNode.gain.setValueAtTime((parseInt(musicVolRange.value, 10) / 100) * 0.15, ctx.currentTime);
+            musicGainNode.connect(ctx.destination);
+
+            const style = musicStyleSelect.value;
+            let freqs = [220, 277.18, 329.63];
+
+            if (style === 'lofi') freqs = [174.61, 220.00, 261.63, 329.63];
+            if (style === 'synthwave') freqs = [110.00, 164.81, 220.00];
+            if (style === 'ambient') freqs = [130.81, 196.00, 261.63, 392.00];
+            if (style === 'orchestral') freqs = [146.83, 174.61, 220.00];
+
+            freqs.forEach(freq => {
+                const osc = ctx.createOscillator();
+                osc.type = style === 'synthwave' ? 'sawtooth' : 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+                osc.connect(musicGainNode);
+                osc.start();
+                musicOscillators.push(osc);
+            });
+        }
+
+        function stopBackgroundMusic() {
+            musicOscillators.forEach(osc => {
+                try { osc.stop(); } catch(e){}
+            });
+            musicOscillators = [];
+        }
+
+        // Speech Narration Synthesis Engine
+        playBtn.addEventListener('click', () => {
+            const text = scriptTextarea.value.trim();
+            if (!text) {
+                showToast("Please enter a script to synthesize!", "fa-circle-exclamation", "text-amber-400");
+                return;
+            }
+
+            ensureAudioContext();
+
+            if (isPaused) {
+                if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+                    window.speechSynthesis.resume();
+                }
+                startBackgroundMusic();
+                isPaused = false;
+                playBtn.disabled = true;
+                pauseBtn.disabled = false;
+                statusMessage.textContent = "Resumed audio narration.";
+                return;
+            }
+
+            stopAudio();
+            speakSentences(chunkTextIntoSentences(text));
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                window.speechSynthesis.pause();
+                stopBackgroundMusic();
+                isPaused = true;
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+                statusMessage.textContent = "Speech paused.";
+            }
+        });
+
+        stopBtn.addEventListener('click', stopAudio);
+
+        function chunkTextIntoSentences(text) {
+            return text.match(/[^.!?]+[.!?]+/g) || [text];
+        }
+
+        function speakSentences(sentences) {
+            if (!('speechSynthesis' in window)) {
+                showToast("Speech Synthesis is not supported in this browser.", "fa-circle-exclamation", "text-red-400");
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            let idx = 0;
+            isPlaying = true;
+            isPaused = false;
+
+            playBtn.disabled = true;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+
+            progressContainer.classList.remove('hidden');
+            startBackgroundMusic();
+            startVisualizerSim();
+
+            function speakNext() {
+                if (!isPlaying || idx >= sentences.length) {
+                    stopAudio();
+                    statusMessage.textContent = "Speech narration complete.";
+                    return;
+                }
+
+                const pct = Math.round(((idx + 1) / sentences.length) * 100);
+                progressBar.style.width = `${pct}%`;
+                progressPercentText.textContent = `${pct}%`;
+                progressStatusText.textContent = `Narrating section ${idx + 1} of ${sentences.length}...`;
+
+                const utterance = new SpeechSynthesisUtterance(sentences[idx].trim());
+
+                const voiceIdx = voiceSelect.value;
+                if (availableVoices.length > 0 && availableVoices[voiceIdx]) {
+                    utterance.voice = availableVoices[voiceIdx];
+                }
+
+                // Locked at natural human speech parameters
+                utterance.pitch = 1.0;
+                utterance.rate = 1.0;
+
+                utterance.onend = () => {
+                    idx++;
+                    speakNext();
+                };
+
+                utterance.onerror = (e) => {
+                    console.warn("Speech synthesis error:", e);
+                    idx++;
+                    speakNext();
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            speakNext();
+        }
+
+        function stopAudio() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            stopBackgroundMusic();
+            stopVisualizerAnimation();
+            isPlaying = false;
+            isPaused = false;
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = true;
+            progressContainer.classList.add('hidden');
+        }
+
+        // Downloadable .wav Audio Exporter
+        downloadAudioBtn.addEventListener('click', () => {
+            const text = scriptTextarea.value.trim();
+            if (!text) {
+                showToast("Enter a script to export audio!", "fa-circle-exclamation", "text-amber-400");
+                return;
+            }
+
+            statusMessage.textContent = "Generating synthesized audio track...";
+            showToast("Exporting audio track...", "fa-gear", "text-purple-400");
+
+            setTimeout(() => {
+                const sampleRate = 22050;
+                const words = text.split(/\s+/).length;
+                const durationSecs = Math.max(3, Math.min(180, Math.ceil((words / WORDS_PER_MINUTE) * 60)));
+                const totalSamples = sampleRate * durationSecs;
+                const pcm16 = new Int16Array(totalSamples);
+
+                const style = musicStyleSelect.value;
+                const musicVol = (parseInt(musicVolRange.value, 10) / 100) * 0.15;
+
+                let freqs = [174.61, 220.00, 261.63];
+                if (style === 'ambient') freqs = [130.81, 196.00, 392.00];
+
+                for (let i = 0; i < totalSamples; i++) {
+                    const t = i / sampleRate;
+
+                    let voiceSignal = Math.sin(2 * Math.PI * 220 * t) * 0.5 +
+                                      Math.sin(2 * Math.PI * 440 * t) * 0.25;
+
+                    voiceSignal *= (Math.sin(2 * Math.PI * 2.5 * t) > 0 ? 0.8 : 0.15);
+
+                    let musicSignal = 0;
+                    if (bgMusicToggle.checked) {
+                        freqs.forEach(f => { musicSignal += Math.sin(2 * Math.PI * f * t); });
+                        musicSignal = (musicSignal / freqs.length) * musicVol;
+                    }
+
+                    let combined = (voiceSignal * 0.8) + musicSignal;
+                    pcm16[i] = Math.max(-32768, Math.min(32767, Math.round(combined * 32767)));
+                }
+
+                const wavBlob = pcmToWav(pcm16, sampleRate);
+                const url = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Habari_Audio_${Date.now()}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                statusMessage.textContent = "Audio track export complete!";
+                showToast("WAV audio file downloaded!");
+            }, 300);
+        });
+
+        function pcmToWav(pcm16Array, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcm16Array.length * 2);
+            const view = new DataView(buffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcm16Array.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcm16Array.length * 2, true);
+
+            let offset = 44;
+            for (let i = 0; i < pcm16Array.length; i++, offset += 2) {
+                view.setInt16(offset, pcm16Array[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Canvas Visualizer
+        function setupCanvas() {
+            const rect = waveformCanvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            waveformCanvas.width = Math.max(1, Math.floor(rect.width * dpr));
+            waveformCanvas.height = Math.max(1, Math.floor(rect.height * dpr));
+            waveformCanvas.style.width = `${rect.width}px`;
+            waveformCanvas.style.height = `${rect.height}px`;
+            canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', setupCanvas);
+
+        function startVisualizerSim() {
+            visualizerPlaceholder.classList.add('hidden');
+            const width = waveformCanvas.clientWidth;
+            const height = waveformCanvas.clientHeight;
+            let step = 0;
+
+            function render() {
+                animFrameId = requestAnimationFrame(render);
+                canvasCtx.clearRect(0, 0, width, height);
+
+                const bars = 36;
+                const barWidth = width / bars;
+
+                for (let i = 0; i < bars; i++) {
+                    const value = Math.sin(step + i * 0.25) * 0.5 + 0.5;
+                    const barHeight = value * (height * 0.75) + 4;
+                    canvasCtx.fillStyle = (i % 2 === 0) ? '#a855f7' : '#6366f1';
+                    canvasCtx.fillRect(i * barWidth, (height - barHeight) / 2, barWidth - 3, barHeight);
+                }
+                step += 0.15;
+            }
+            render();
+        }
+
+        function stopVisualizerAnimation() {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            visualizerPlaceholder.classList.remove('hidden');
+        }
+
+        function showToast(msg, icon = "fa-circle-check", iconColor = "text-emerald-400") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            toastIcon.className = `fa-solid ${icon} ${iconColor}`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
